@@ -4,6 +4,8 @@ const ENDPOINT = "https://foryou.club/also-liked";
 const FETCH_LIMIT = 50;
 const DISPLAY_LIMIT = 3;
 
+const displayUriCache = new Map();
+
 async function fetchAlsoLikedUris(postUri) {
   const url = `${ENDPOINT}?format=json&post=${encodeURIComponent(
     postUri,
@@ -54,33 +56,38 @@ export default class AlsoLikedPlugin extends Plugin {
   onload() {
     this.registerSlot("post-thread-view:after-replies", async (context) => {
       if (!context.uri) return null;
-      const sourcePost = await this.app.data.getPost(context.uri);
-      const excludedDids = collectExcludedDids(sourcePost);
-      const currentUserDid = this.app.currentUser?.did;
-      if (currentUserDid) excludedDids.add(currentUserDid);
-      let candidateUris;
-      try {
-        candidateUris = await fetchAlsoLikedUris(context.uri);
-      } catch (error) {
-        console.error("[also-liked]", error);
-        return null;
-      }
-      if (candidateUris.length === 0) return null;
 
-      const uris = [];
-      for (const uri of candidateUris) {
-        const authorDid = getAuthorDidFromUri(uri);
-        if (authorDid && excludedDids.has(authorDid)) continue;
-        const cached = await this.app.data.getPost(uri).catch(() => null);
-        if (cached) {
-          if (cached.viewer?.like) continue;
-          if (cached.viewer?.repost) continue;
-          if (cached.viewer?.bookmarked) continue;
+      let uris = displayUriCache.get(context.uri);
+      if (!uris) {
+        const sourcePost = await this.app.data.getPost(context.uri);
+        const excludedDids = collectExcludedDids(sourcePost);
+        const currentUserDid = this.app.currentUser?.did;
+        if (currentUserDid) excludedDids.add(currentUserDid);
+        let candidateUris;
+        try {
+          candidateUris = await fetchAlsoLikedUris(context.uri);
+        } catch (error) {
+          console.error("[also-liked]", error);
+          return null;
         }
-        uris.push(uri);
-        if (uris.length >= DISPLAY_LIMIT) break;
+        if (candidateUris.length === 0) return null;
+
+        uris = [];
+        for (const uri of candidateUris) {
+          const authorDid = getAuthorDidFromUri(uri);
+          if (authorDid && excludedDids.has(authorDid)) continue;
+          const cached = await this.app.data.getPost(uri).catch(() => null);
+          if (cached) {
+            if (cached.viewer?.like) continue;
+            if (cached.viewer?.repost) continue;
+            if (cached.viewer?.bookmarked) continue;
+          }
+          uris.push(uri);
+          if (uris.length >= DISPLAY_LIMIT) break;
+        }
+        if (uris.length === 0) return null;
+        displayUriCache.set(context.uri, uris);
       }
-      if (uris.length === 0) return null;
 
       const section = new VirtualEl("div");
       section.addClass("also-liked-section");
