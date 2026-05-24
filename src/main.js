@@ -51,6 +51,8 @@ export default class AlsoLikedPlugin extends Plugin {
       if (!context.uri) return null;
       const sourcePost = await this.app.data.getPost(context.uri);
       const excludedDids = collectExcludedDids(sourcePost);
+      const currentUserDid = this.app.currentUser?.did;
+      if (currentUserDid) excludedDids.add(currentUserDid);
       let candidateUris;
       try {
         candidateUris = await fetchAlsoLikedUris(context.uri);
