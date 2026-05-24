@@ -443,6 +443,10 @@ async function fetchAlsoLikedUris(postUri) {
   const body = await response.json();
   return (body.feed ?? []).map((entry) => entry.post).filter((uri) => typeof uri === "string");
 }
+function getAuthorDidFromUri(uri) {
+  const match = /^at:\/\/(did:[^/]+)\//.exec(uri);
+  return match ? match[1] : null;
+}
 function getQuotedRecord(post) {
   const embed = post?.embed;
   if (!embed) return null;
@@ -477,20 +481,17 @@ var AlsoLikedPlugin = class extends Plugin {
         return null;
       }
       if (candidateUris.length === 0) return null;
-      const candidatePosts = await Promise.all(
-        candidateUris.map(
-          (uri) => this.app.data.getPost(uri).catch(() => null)
-        )
-      );
       const uris = [];
-      for (let index = 0; index < candidatePosts.length; index++) {
-        const candidate = candidatePosts[index];
-        if (!candidate?.author?.did) continue;
-        if (excludedDids.has(candidate.author.did)) continue;
-        if (candidate.viewer?.like) continue;
-        if (candidate.viewer?.repost) continue;
-        if (candidate.viewer?.bookmarked) continue;
-        uris.push(candidateUris[index]);
+      for (const uri of candidateUris) {
+        const authorDid = getAuthorDidFromUri(uri);
+        if (authorDid && excludedDids.has(authorDid)) continue;
+        const cached = await this.app.data.getPost(uri).catch(() => null);
+        if (cached) {
+          if (cached.viewer?.like) continue;
+          if (cached.viewer?.repost) continue;
+          if (cached.viewer?.bookmarked) continue;
+        }
+        uris.push(uri);
         if (uris.length >= DISPLAY_LIMIT) break;
       }
       if (uris.length === 0) return null;
