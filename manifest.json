@@ -1,8 +1,8 @@
 {
   "id": "also-liked",
   "name": "Also Liked",
-  "version": "0.1.0",
-  "author": "Impro",
+  "version": "0.1.1",
+  "author": "kindgracekind",
   "description": "Shows posts also liked by the people who liked the post you're viewing.",
   "permissions": {
     "fetch": ["https://foryou.club/*"]
