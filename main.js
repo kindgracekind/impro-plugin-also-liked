@@ -504,7 +504,7 @@ var AlsoLikedPlugin = class extends Plugin {
       section.addClass("also-liked-section");
       const header = section.createEl("div", { cls: "also-liked-header" });
       header.createEl("h3", { cls: "also-liked-heading" }).setText("Also liked");
-      header.createEl("p", { cls: "also-liked-subheading" }).setText("Posts liked by who people who liked this post");
+      header.createEl("p", { cls: "also-liked-subheading" }).setText("Posts liked by people who liked this post");
       section.createPostsFeed(
         (feed) => feed.setUris(uris).setEmptyMessage("No related posts.")
       );

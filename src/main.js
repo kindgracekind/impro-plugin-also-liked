@@ -97,7 +97,7 @@ export default class AlsoLikedPlugin extends Plugin {
         .setText("Also liked");
       header
         .createEl("p", { cls: "also-liked-subheading" })
-        .setText("Posts liked by who people who liked this post");
+        .setText("Posts liked by people who liked this post");
       section.createPostsFeed((feed) =>
         feed.setUris(uris).setEmptyMessage("No related posts."),
       );
